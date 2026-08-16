@@ -12,7 +12,11 @@ import {
   CheckCircle2,
   RefreshCw,
   TrendingDown,
-  Trash2
+  Trash2,
+  ImagePlus,
+  X,
+  Printer,
+  FileImage
 } from 'lucide-react';
 
 export const ExpenseManagerView: React.FC = () => {
@@ -33,6 +37,8 @@ export const ExpenseManagerView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [billPhotoUrl, setBillPhotoUrl] = useState('');
+  const [selectedVoucher, setSelectedVoucher] = useState<Expense | null>(null);
 
   const expenseCategories = [
     'मंडप व स्टेज (Mandap & Stage)',
@@ -63,6 +69,23 @@ export const ExpenseManagerView: React.FC = () => {
     fetchExpenses();
   }, [fetchExpenses]);
 
+  const handleBillImage = (file?: File) => {
+    setError(null);
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError(language === 'en' ? 'Only JPEG, PNG, or WebP bill images are allowed.' : 'फक्त JPEG, PNG किंवा WebP बिल इमेज वापरता येईल.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError(language === 'en' ? 'Bill image must be 2 MB or smaller.' : 'बिल इमेज २ MB किंवा त्यापेक्षा लहान असावी.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setBillPhotoUrl(String(reader.result || ''));
+    reader.onerror = () => setError(language === 'en' ? 'Could not read the selected image.' : 'निवडलेली इमेज वाचता आली नाही.');
+    reader.readAsDataURL(file);
+  };
+
   const handleCreateExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !amount) {
@@ -83,6 +106,7 @@ export const ExpenseManagerView: React.FC = () => {
           paidTo: paidTo.trim(),
           paymentMode,
           date,
+          billPhotoUrl,
         }),
       });
 
@@ -91,6 +115,7 @@ export const ExpenseManagerView: React.FC = () => {
         setTitle('');
         setAmount('');
         setPaidTo('');
+        setBillPhotoUrl('');
         setShowAddForm(false);
         setSuccessMsg(
           language === 'en'
@@ -138,6 +163,13 @@ export const ExpenseManagerView: React.FC = () => {
 
   const totalExpenseAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
+  const handlePrintVoucher = () => {
+    if (!selectedVoucher) return;
+    void authFetch(`/api/expenses/${selectedVoucher._id}/voucher-printed`, { method: 'POST' })
+      .catch((auditError) => console.warn('Could not record voucher print:', auditError));
+    window.print();
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -163,13 +195,13 @@ export const ExpenseManagerView: React.FC = () => {
             </div>
           </div>
 
-          <button
+          {(user?.role === 'admin' || user?.canManageExpenses) ? <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>{showAddForm ? t('action_close') : t('exp_btn_new')}</span>
-          </button>
+          </button> : <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">{language === 'en' ? 'View only' : 'फक्त पाहण्याचा अधिकार'}</span>}
         </div>
       </div>
 
@@ -299,6 +331,39 @@ export const ExpenseManagerView: React.FC = () => {
               />
             </div>
 
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                {language === 'en' ? 'Bill / Invoice image (optional)' : 'बिल / पावतीचा फोटो (ऐच्छिक)'}
+              </label>
+              {!billPhotoUrl ? (
+                <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center transition hover:border-red-400 hover:bg-red-50/40">
+                  <ImagePlus className="mb-2 h-6 w-6 text-red-600" />
+                  <span className="text-xs font-bold text-slate-700">
+                    {language === 'en' ? 'Choose a JPEG, PNG or WebP image' : 'JPEG, PNG किंवा WebP फोटो निवडा'}
+                  </span>
+                  <span className="mt-1 text-[11px] text-slate-500">{language === 'en' ? 'Maximum 2 MB' : 'कमाल 2 MB'}</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(event) => handleBillImage(event.target.files?.[0])}
+                  />
+                </label>
+              ) : (
+                <div className="relative inline-block overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
+                  <img src={billPhotoUrl} alt="Bill preview" className="h-32 max-w-full rounded-lg object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => setBillPhotoUrl('')}
+                    className="absolute right-3 top-3 rounded-full bg-slate-900/80 p-1 text-white hover:bg-red-700"
+                    title={language === 'en' ? 'Remove image' : 'फोटो काढा'}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="sm:col-span-2 pt-2 flex justify-end gap-2">
               <button
                 type="button"
@@ -333,9 +398,7 @@ export const ExpenseManagerView: React.FC = () => {
                 <th className="py-3 px-3.5">{language === 'en' ? 'Recorded By' : 'नोंदवणारा'}</th>
                 <th className="py-3 px-3.5">{language === 'en' ? 'Date' : 'दिनांक'}</th>
                 <th className="py-3 px-3.5 text-right">{language === 'en' ? 'Amount (₹)' : 'रक्कम (₹)'}</th>
-                {user?.role === 'admin' && (
-                  <th className="py-3 px-3.5 text-center">{language === 'en' ? 'Action' : 'कृती'}</th>
-                )}
+                <th className="py-3 px-3.5 text-center">{language === 'en' ? 'Documents / Action' : 'कागदपत्रे / कृती'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -365,8 +428,27 @@ export const ExpenseManagerView: React.FC = () => {
                   <td className="py-3 px-3.5 text-right font-black font-mono text-red-700 text-sm">
                     ₹{exp.amount.toLocaleString('en-IN')}
                   </td>
-                  {user?.role === 'admin' && (
-                    <td className="py-3 px-3.5 text-center">
+                  <td className="py-3 px-3.5 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => setSelectedVoucher(exp)}
+                        className="p-1.5 text-slate-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                        title={language === 'en' ? 'View / print voucher' : 'व्हाउचर पहा / प्रिंट करा'}
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      {exp.billPhotoUrl && (
+                        <a
+                          href={exp.billPhotoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition"
+                          title={language === 'en' ? 'View attached bill' : 'जोडलेले बिल पहा'}
+                        >
+                          <FileImage className="w-4 h-4" />
+                        </a>
+                      )}
+                      {user?.role === 'admin' && (
                       <button
                         onClick={() => handleDeleteExpense(exp._id, exp.title, exp.amount)}
                         disabled={deletingId === exp._id}
@@ -375,14 +457,15 @@ export const ExpenseManagerView: React.FC = () => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    </td>
-                  )}
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
 
               {expenses.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={user?.role === 'admin' ? 9 : 8} className="py-8 text-center text-slate-400">
+                  <td colSpan={9} className="py-8 text-center text-slate-400">
                     {language === 'en' ? 'No expenses recorded yet.' : 'अद्याप कोणत्याही खर्चाची नोंद नाही.'}
                   </td>
                 </tr>
@@ -391,6 +474,65 @@ export const ExpenseManagerView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {selectedVoucher && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 print:static print:block print:bg-white print:p-0">
+          <div className="max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl print:max-h-none print:max-w-none print:overflow-visible print:rounded-none print:shadow-none">
+            <div className="flex items-center justify-end gap-2 border-b border-slate-200 p-4 print:hidden">
+              <button onClick={handlePrintVoucher} className="flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-xs font-bold text-white hover:bg-red-600">
+                <Printer className="h-4 w-4" />
+                {language === 'en' ? 'Print voucher' : 'व्हाउचर प्रिंट करा'}
+              </button>
+              <button onClick={() => setSelectedVoucher(null)} className="rounded-xl border border-slate-300 p-2 text-slate-600 hover:bg-slate-100" title="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div id="expense-voucher-print" className="bg-white p-7 sm:p-10 text-slate-950">
+              <div className="border-2 border-slate-900 p-5 sm:p-7">
+                <div className="border-b-2 border-slate-900 pb-4 text-center">
+                  <h2 className="text-xl font-black uppercase tracking-wide">{t('mandal_name')}</h2>
+                  <p className="mt-1 text-xs font-bold">{t('mandal_sub')}</p>
+                  <p className="mt-2 text-sm font-bold">{language === 'en' ? 'EXPENSE PAYMENT VOUCHER' : 'खर्च अदायगी व्हाउचर'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 border-b border-slate-400 py-4 text-sm">
+                  <VoucherRow label={language === 'en' ? 'Voucher No.' : 'व्हाउचर क्र.'} value={selectedVoucher.expenseNo} />
+                  <VoucherRow label={language === 'en' ? 'Date' : 'दिनांक'} value={selectedVoucher.date} />
+                </div>
+                <div className="space-y-3 py-5 text-sm">
+                  <VoucherRow label={language === 'en' ? 'Description' : 'खर्चाचे वर्णन'} value={selectedVoucher.title} />
+                  <VoucherRow label={language === 'en' ? 'Category' : 'श्रेणी'} value={selectedVoucher.category} />
+                  <VoucherRow label={language === 'en' ? 'Paid to' : 'ज्यांना दिले'} value={selectedVoucher.paidTo || '-'} />
+                  <VoucherRow label={language === 'en' ? 'Payment mode' : 'पेमेंट पद्धत'} value={selectedVoucher.paymentMode.toUpperCase()} />
+                  <VoucherRow label={language === 'en' ? 'Recorded by' : 'नोंद करणारे'} value={selectedVoucher.recordedBy?.name || '-'} />
+                </div>
+                <div className="border-y-2 border-slate-900 py-4 text-center">
+                  <p className="text-xs font-bold uppercase text-slate-600">{language === 'en' ? 'Amount paid' : 'अदा केलेली रक्कम'}</p>
+                  <p className="mt-1 text-3xl font-black">₹{selectedVoucher.amount.toLocaleString('en-IN')}</p>
+                </div>
+                {selectedVoucher.billPhotoUrl && (
+                  <div className="mt-5 border-t border-dashed border-slate-400 pt-4">
+                    <p className="mb-2 text-xs font-bold uppercase text-slate-600">{language === 'en' ? 'Attached bill / invoice' : 'जोडलेले बिल / पावती'}</p>
+                    <img src={selectedVoucher.billPhotoUrl} alt="Attached bill" className="mx-auto max-h-72 max-w-full object-contain" />
+                  </div>
+                )}
+                <div className="mt-16 grid grid-cols-3 gap-5 text-center text-xs font-bold">
+                  <div className="border-t border-slate-800 pt-2">{language === 'en' ? 'Receiver signature' : 'स्वीकारणाऱ्याची सही'}</div>
+                  <div className="border-t border-slate-800 pt-2">{language === 'en' ? 'Treasurer' : 'खजिनदार'}</div>
+                  <div className="border-t border-slate-800 pt-2">{language === 'en' ? 'President / Secretary' : 'अध्यक्ष / सचिव'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+const VoucherRow: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div className="flex gap-2">
+    <span className="shrink-0 font-bold text-slate-600">{label}:</span>
+    <span className="font-semibold text-slate-950">{value}</span>
+  </div>
+);

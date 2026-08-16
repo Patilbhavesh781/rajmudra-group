@@ -8,12 +8,20 @@ const actionLabels: Record<AuditAction, { en: string; mr: string; color: string 
   LOGIN: { en: 'Login', mr: 'लॉगिन', color: 'bg-emerald-100 text-emerald-800' },
   LOGOUT: { en: 'Logout', mr: 'लॉगआउट', color: 'bg-slate-100 text-slate-700' },
   USER_CREATED: { en: 'User created', mr: 'युजर तयार', color: 'bg-blue-100 text-blue-800' },
+  USER_UPDATED: { en: 'User updated', mr: 'युजर बदलला', color: 'bg-sky-100 text-sky-800' },
+  USER_DELETED: { en: 'User deleted', mr: 'युजर हटवला', color: 'bg-red-100 text-red-800' },
   USER_FORCE_LOGOUT: { en: 'Force logout', mr: 'सत्र बंद', color: 'bg-orange-100 text-orange-800' },
   PAVTI_CREATED: { en: 'Receipt created', mr: 'पावती तयार', color: 'bg-amber-100 text-amber-900' },
   PAVTI_PAYMENT_STATUS_CHANGED: { en: 'Payment updated', mr: 'पेमेंट बदल', color: 'bg-purple-100 text-purple-800' },
   PAVTI_CANCELLED: { en: 'Receipt cancelled', mr: 'पावती रद्द', color: 'bg-red-100 text-red-800' },
   EXPENSE_CREATED: { en: 'Expense created', mr: 'खर्च नोंद', color: 'bg-rose-100 text-rose-800' },
   EXPENSE_DELETED: { en: 'Expense deleted', mr: 'खर्च हटवला', color: 'bg-red-100 text-red-800' },
+  RECEIPTS_REPORT_EXPORTED: { en: 'Receipts exported', mr: 'पावत्या निर्यात', color: 'bg-cyan-100 text-cyan-800' },
+  EXPENSES_REPORT_EXPORTED: { en: 'Expenses exported', mr: 'खर्च निर्यात', color: 'bg-cyan-100 text-cyan-800' },
+  PAVTI_PNG_EXPORTED: { en: 'Receipt PNG', mr: 'पावती PNG', color: 'bg-indigo-100 text-indigo-800' },
+  PAVTI_PDF_EXPORTED: { en: 'Receipt PDF', mr: 'पावती PDF', color: 'bg-indigo-100 text-indigo-800' },
+  EXPENSE_VOUCHER_PRINTED: { en: 'Voucher printed', mr: 'व्हाउचर प्रिंट', color: 'bg-pink-100 text-pink-800' },
+  MANDAL_DATA_RESET: { en: 'Mandal data reset', mr: 'मंडळ डेटा रीसेट', color: 'bg-red-100 text-red-900' },
 };
 
 const formatMetadata = (metadata: Record<string, unknown>) =>

@@ -8,6 +8,8 @@ export interface User {
   lastLoginDevice?: string | null;
   isActive?: boolean;
   hasActiveSession?: boolean;
+  canUpdateReceiptStatus?: boolean;
+  canManageExpenses?: boolean;
   createdAt?: string;
 }
 
@@ -138,12 +140,20 @@ export type AuditAction =
   | 'LOGIN'
   | 'LOGOUT'
   | 'USER_CREATED'
+  | 'USER_UPDATED'
+  | 'USER_DELETED'
   | 'USER_FORCE_LOGOUT'
   | 'PAVTI_CREATED'
   | 'PAVTI_PAYMENT_STATUS_CHANGED'
   | 'PAVTI_CANCELLED'
   | 'EXPENSE_CREATED'
-  | 'EXPENSE_DELETED';
+  | 'EXPENSE_DELETED'
+  | 'RECEIPTS_REPORT_EXPORTED'
+  | 'EXPENSES_REPORT_EXPORTED'
+  | 'PAVTI_PNG_EXPORTED'
+  | 'PAVTI_PDF_EXPORTED'
+  | 'EXPENSE_VOUCHER_PRINTED'
+  | 'MANDAL_DATA_RESET';
 
 export interface AuditLog {
   _id: string;

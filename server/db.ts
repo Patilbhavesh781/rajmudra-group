@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import dns from 'node:dns';
+import { MANDAL_CONFIG } from '../shared/mandalConfig.js';
 
 // Local backup storage file path if MongoDB URI is not active
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -19,7 +20,7 @@ export let dbStatus: IDbStatus = {
   connected: false,
   type: 'local_fallback',
   uriConfigured: false,
-  dbName: 'rajmudra_mandal_db',
+  dbName: MANDAL_CONFIG.databaseName,
 };
 
 // In-Memory Storage Engine for reliable fallback & high speed
@@ -72,12 +73,15 @@ export async function connectDatabase() {
 
   let mongoUri = (process.env.MONGODB_URI || '').trim().replace(/^["']|["']$/g, '').replace(/\r?\n/g, '').trim();
   if (!mongoUri || mongoUri.includes('<username>') || mongoUri.includes('cluster0.mongodb.net/mandal_db')) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('A valid MONGODB_URI is required in production. Local fallback storage is not persistent on cloud hosting.');
+    }
     console.log('[DB] MONGODB_URI not set or contains placeholder. Using robust persistent store.');
     dbStatus = {
       connected: true,
       type: 'local_fallback',
       uriConfigured: Boolean(mongoUri && !mongoUri.includes('<username>')),
-      dbName: 'rajmudra_mandal_db (Persistent Local)',
+      dbName: `${MANDAL_CONFIG.databaseName} (Persistent Local)`,
     };
     return;
   }
@@ -87,19 +91,22 @@ export async function connectDatabase() {
     console.log(`[DB] Connecting to MongoDB...`);
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 7000,
-      dbName: 'rajmudra_mandal_db',
+      dbName: MANDAL_CONFIG.databaseName,
     });
     dbStatus.connected = true;
     dbStatus.type = 'mongodb';
-    dbStatus.dbName = mongoose.connection.name || 'rajmudra_mandal_db';
+    dbStatus.dbName = mongoose.connection.name || MANDAL_CONFIG.databaseName;
     console.log(`[DB] Connected successfully to MongoDB: ${dbStatus.dbName}`);
   } catch (err: any) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`MongoDB connection failed in production: ${err.message}`);
+    }
     console.warn(`[DB] MongoDB connection warning: ${err.message}. Seamlessly falling back to persistent local storage.`);
     dbStatus = {
       connected: true,
       type: 'local_fallback',
       uriConfigured: true,
-      dbName: 'rajmudra_mandal_db (Local Fallback)',
+      dbName: `${MANDAL_CONFIG.databaseName} (Local Fallback)`,
       error: err.message,
     };
   }

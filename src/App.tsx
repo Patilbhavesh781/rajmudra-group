@@ -11,6 +11,9 @@ import { UserManagerView } from './components/UserManagerView';
 import { ReceiptSlipModal } from './components/ReceiptSlipModal';
 import { SessionTerminatedModal } from './components/SessionTerminatedModal';
 import { AuditLogsView } from './components/AuditLogsView';
+import { FinancialReportsView } from './components/FinancialReportsView';
+import { MemberPerformanceView } from './components/MemberPerformanceView';
+import { Sidebar } from './components/Sidebar';
 import { Pavti } from './types';
 import { RefreshCw } from 'lucide-react';
 
@@ -64,8 +67,10 @@ const MainLayout: React.FC = () => {
         onOpenNewPavti={() => setActiveTab('new_pavti')}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6">
+      {/* Responsive navigation layout: sidebar on desktop, top tabs on mobile */}
+      <div className="mx-auto flex w-full max-w-[1500px] flex-1 items-start gap-5 p-3.5 sm:p-6">
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <main className="min-w-0 flex-1">
         {activeTab === 'calculations' && (
           <CalculationsView
             onOpenNewPavti={() => setActiveTab('new_pavti')}
@@ -89,12 +94,25 @@ const MainLayout: React.FC = () => {
           />
         )}
 
+        {activeTab === 'unpaid_receipts' && (
+          <PavtiListView
+            unpaidOnly
+            onViewReceipt={handleViewReceipt}
+            onOpenNewPavti={() => setActiveTab('new_pavti')}
+          />
+        )}
+
         {activeTab === 'expenses' && <ExpenseManagerView />}
+
+        {activeTab === 'member_performance' && <MemberPerformanceView />}
 
         {activeTab === 'users' && <UserManagerView />}
 
+        {activeTab === 'financial_reports' && <FinancialReportsView />}
+
         {activeTab === 'audit_logs' && <AuditLogsView />}
       </main>
+      </div>
 
       {/* Footer */}
       <footer className="bg-amber-950 text-amber-200/80 text-xs py-5 px-4 border-t border-amber-800/80 mt-auto print:hidden">

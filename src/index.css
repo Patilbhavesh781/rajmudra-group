@@ -43,12 +43,27 @@ body {
   header, footer, nav, button, .print\:hidden {
     display: none !important;
   }
-  #printable-receipt-slip {
+  #printable-receipt-slip,
+  #expense-voucher-print {
     display: block !important;
     position: static !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  body:has(#expense-voucher-print) * {
+    visibility: hidden;
+  }
+
+  body:has(#expense-voucher-print) #expense-voucher-print,
+  body:has(#expense-voucher-print) #expense-voucher-print * {
+    visibility: visible;
+  }
+
+  body:has(#expense-voucher-print) #expense-voucher-print {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
   }
 }
 

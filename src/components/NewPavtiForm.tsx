@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { MANDAL_CONFIG } from '../../shared/mandalConfig';
 import { Pavti } from '../types';
 import {
   Receipt,
@@ -123,10 +124,10 @@ Thank you for your auspicious Ganesh Festival donation / vargani.
 • *Address:* ${finalAddress}
 • *Issued By:* ${user?.name || 'Mandal Representative'}
 
-Rajmudra Ganpati Mandal conveys its deepest gratitude. May Lord Ganesha bestow peace, health, and prosperity upon your family!
+${MANDAL_CONFIG.name.en} conveys its deepest gratitude. May Lord Ganesha bestow peace, health, and prosperity upon your family!
 
 *॥ Ganpati Bappa Morya, Mangalmurtii Morya ॥*`
-          : `🚩 *राजमुद्रा गणपती मंडळ* 🚩
+          : `🚩 *${MANDAL_CONFIG.name.mr}* 🚩
 *॥ ॐ गं गणपतये नमः ॥ ॥ गणपती बाप्पा मोरया ॥*
 
 प्रिय श्री/सौ. *${donorName.trim()}*,
@@ -142,7 +143,7 @@ Rajmudra Ganpati Mandal conveys its deepest gratitude. May Lord Ganesha bestow p
 • *पत्ता:* ${finalAddress}
 • *पावती देणारा:* ${user?.name || 'मंडळ प्रतिनिधी'}
 
-राजमुद्रा गणपती मंडळ आपले सहर्ष आभार मानत आहे! बाप्पाच्या कृपेने आपल्या सर्व मनोकामना पूर्ण होवोत.
+${MANDAL_CONFIG.name.mr} आपले सहर्ष आभार मानत आहे! बाप्पाच्या कृपेने आपल्या सर्व मनोकामना पूर्ण होवोत.
 
 *॥ गणपती बाप्पा मोरया, मंगलमूर्ती मोरया ॥*`;
 

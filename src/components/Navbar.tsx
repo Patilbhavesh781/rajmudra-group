@@ -13,7 +13,9 @@ import {
   Globe,
   Sparkles,
   Check,
-  Activity
+  Activity,
+  FileSpreadsheet,
+  Clock
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -42,8 +44,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenN
     { id: 'calculations', label: language === 'en' ? '📊 Dashboard & Accounts' : '📊 डॅशबोर्ड व हिशोब', icon: BarChart3, badge: 'Live' },
     { id: 'new_pavti', label: t('tab_new_pavti'), icon: Receipt, highlight: true },
     { id: 'receipts', label: t('tab_receipts'), icon: ListFilter },
+    { id: 'unpaid_receipts', label: language === 'en' ? 'Pending Receipts' : 'बाकी पावत्या', icon: Clock },
     { id: 'expenses', label: t('tab_expenses'), icon: Wallet },
+    { id: 'member_performance', label: language === 'en' ? 'Member Performance' : 'कार्यकर्ता कामगिरी', icon: Users },
     ...(user?.role === 'admin' ? [{ id: 'users', label: t('tab_users'), icon: Users }] : []),
+    ...(user?.role === 'admin' ? [{ id: 'financial_reports', label: language === 'en' ? 'Reports' : 'आर्थिक अहवाल', icon: FileSpreadsheet }] : []),
     ...(user?.role === 'admin' ? [{ id: 'audit_logs', label: language === 'en' ? 'Audit Logs' : 'ऑडिट नोंदी', icon: Activity }] : []),
   ];
 
@@ -143,7 +148,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenN
       </div>
 
       {/* Navigation Tabs Bar */}
-      <div className="bg-amber-950/70 border-t border-amber-800/60 backdrop-blur-sm px-2 sm:px-6">
+      <div className="bg-amber-950/70 border-t border-amber-800/60 backdrop-blur-sm px-2 sm:px-6 lg:hidden">
         <div className="max-w-7xl mx-auto flex items-center gap-1 sm:gap-2 overflow-x-auto py-1.5 no-scrollbar">
           {navTabs.map((tab) => {
             const Icon = tab.icon;

@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { UserModel } from '../models.js';
+import { UserModel, resetMandalData } from '../models.js';
 import { generateToken, authenticateToken, requireAdmin, AuthRequest } from '../auth.js';
 import { recordAudit } from '../audit.js';
+import { MANDAL_CONFIG } from '../../shared/mandalConfig.js';
 
 const router = Router();
 
@@ -102,6 +103,8 @@ router.post('/login', async (req: Request, res: Response) => {
         sessionId: newSessionId,
         lastLoginAt: loginTime,
         lastLoginDevice: deviceInfo,
+        canUpdateReceiptStatus: Boolean(user.canUpdateReceiptStatus),
+        canManageExpenses: Boolean(user.canManageExpenses),
       }
     });
   } catch (err: any) {
@@ -149,7 +152,9 @@ router.get('/verify-session', authenticateToken, async (req: AuthRequest, res: R
         role: user.role,
         lastLoginAt: user.lastLoginAt,
         lastLoginDevice: user.lastLoginDevice,
-        sessionId: req.user!.sessionId,
+      sessionId: req.user!.sessionId,
+      canUpdateReceiptStatus: Boolean(user.canUpdateReceiptStatus),
+      canManageExpenses: Boolean(user.canManageExpenses),
       }
     });
   } catch (err: any) {
@@ -172,6 +177,8 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
       lastLoginAt: user.lastLoginAt,
       lastLoginDevice: user.lastLoginDevice,
       createdAt: user.createdAt,
+      canUpdateReceiptStatus: Boolean(user.canUpdateReceiptStatus),
+      canManageExpenses: Boolean(user.canManageExpenses),
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -191,6 +198,8 @@ router.get('/users', authenticateToken, requireAdmin, async (req: AuthRequest, r
       lastLoginAt: u.lastLoginAt,
       lastLoginDevice: u.lastLoginDevice,
       hasActiveSession: Boolean(u.activeSessionId),
+      canUpdateReceiptStatus: Boolean(u.canUpdateReceiptStatus),
+      canManageExpenses: Boolean(u.canManageExpenses),
       createdAt: u.createdAt,
     }));
     return res.json(sanitized);
@@ -202,7 +211,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req: AuthRequest, r
 // POST /api/auth/create-user (Admin only: create new karyakarta)
 router.post('/create-user', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, phone, password, role } = req.body;
+    const { name, phone, password, role, canUpdateReceiptStatus, canManageExpenses } = req.body;
     if (!name || !phone || !password) {
       return res.status(400).json({ error: 'नाव, फोन आणि पासवर्ड आवश्यक आहेत.' });
     }
@@ -220,6 +229,8 @@ router.post('/create-user', authenticateToken, requireAdmin, async (req: AuthReq
       role: role === 'admin' ? 'admin' : 'user',
       passwordHash,
       activeSessionId: null,
+      canUpdateReceiptStatus: role === 'admin' || Boolean(canUpdateReceiptStatus),
+      canManageExpenses: role === 'admin' || Boolean(canManageExpenses),
     });
 
     await recordAudit({
@@ -243,6 +254,46 @@ router.post('/create-user', authenticateToken, requireAdmin, async (req: AuthReq
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
+});
+
+router.patch('/users/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const target = await UserModel.findById(req.params.id);
+    if (!target) return res.status(404).json({ error: 'User not found.' });
+    const primaryAdminPhone = process.env.INITIAL_ADMIN_PHONE?.trim() || MANDAL_CONFIG.primaryAdmin.phone;
+    const isPrimary = target.phone === primaryAdminPhone;
+    const { name, role, isActive, canUpdateReceiptStatus, canManageExpenses, password } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'Member name is required.' });
+    if (password?.trim() && password.trim().length < 6) return res.status(400).json({ error: 'Password must contain at least 6 characters.' });
+    if (isPrimary && (role !== 'admin' || isActive === false)) return res.status(400).json({ error: 'The primary admin cannot be deactivated or demoted.' });
+    if ((target._id?.toString() || target.id) === req.user!.id && (role !== 'admin' || isActive === false)) return res.status(400).json({ error: 'You cannot deactivate or demote your current admin account.' });
+
+    const safeRole = role === 'admin' ? 'admin' : 'user';
+    const updates: Record<string, unknown> = {
+      name: name.trim(),
+      role: safeRole,
+      isActive: isPrimary ? true : Boolean(isActive),
+      canUpdateReceiptStatus: safeRole === 'admin' || Boolean(canUpdateReceiptStatus),
+      canManageExpenses: safeRole === 'admin' || Boolean(canManageExpenses),
+    };
+    if (password?.trim()) updates.passwordHash = await bcrypt.hash(password.trim(), 10);
+    if (!updates.isActive) updates.activeSessionId = null;
+    await UserModel.updateOne({ _id: req.params.id }, { $set: updates });
+    await recordAudit({ action: 'USER_UPDATED', entityType: 'user', entityId: req.params.id, description: `${req.user!.name} updated member ${target.name}.`, req, metadata: { targetName: name.trim(), role: safeRole, isActive: updates.isActive, canUpdateReceiptStatus: updates.canUpdateReceiptStatus, canManageExpenses: updates.canManageExpenses } });
+    return res.json({ message: 'Member updated successfully.' });
+  } catch (err: any) { return res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/users/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const target = await UserModel.findById(req.params.id);
+    if (!target) return res.status(404).json({ error: 'User not found.' });
+    const primaryAdminPhone = process.env.INITIAL_ADMIN_PHONE?.trim() || MANDAL_CONFIG.primaryAdmin.phone;
+    if (target.phone === primaryAdminPhone || req.params.id === req.user!.id) return res.status(400).json({ error: 'The primary/current admin account cannot be deleted.' });
+    await UserModel.deleteOne({ _id: req.params.id });
+    await recordAudit({ action: 'USER_DELETED', entityType: 'user', entityId: req.params.id, description: `${req.user!.name} deleted member ${target.name}.`, req, metadata: { targetName: target.name, targetPhone: target.phone, targetRole: target.role } });
+    return res.json({ message: 'Member deleted successfully.' });
+  } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
 // POST /api/auth/force-logout-user (Admin can force logout any karyakarta)
@@ -270,6 +321,37 @@ router.post('/force-logout-user', authenticateToken, requireAdmin, async (req: A
     });
 
     return res.json({ message: 'User session terminated successfully.' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/reset-mandal-data', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const primaryAdminPhone = process.env.INITIAL_ADMIN_PHONE?.trim() || MANDAL_CONFIG.primaryAdmin.phone;
+    if (req.user!.phone !== primaryAdminPhone) {
+      return res.status(403).json({ error: 'Only the primary Mandal administrator can reset all data.' });
+    }
+
+    const { password, confirmation } = req.body;
+    if (confirmation !== 'DELETE RAJMUDRA DATA') {
+      return res.status(400).json({ error: 'The reset confirmation phrase is incorrect.' });
+    }
+    const admin = await UserModel.findById(req.user!.id);
+    if (!admin || !password || !(await bcrypt.compare(String(password), admin.passwordHash))) {
+      return res.status(401).json({ error: 'Administrator password is incorrect.' });
+    }
+
+    const deleted = await resetMandalData(req.user!.id);
+    await recordAudit({
+      action: 'MANDAL_DATA_RESET',
+      entityType: 'auth',
+      entityId: req.user!.id,
+      description: `${req.user!.name} reset Mandal financial data and member accounts.`,
+      req,
+      metadata: deleted,
+    });
+    return res.json({ message: 'Mandal data was reset successfully. The primary admin account was preserved.', deleted });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

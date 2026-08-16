@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { MANDAL_CONFIG } from '../../shared/mandalConfig';
 
 export type Language = 'mr' | 'en';
 
@@ -13,8 +14,8 @@ interface LanguageContextType {
 const translations: Record<Language, Record<string, string>> = {
   mr: {
     // Brand & Header
-    mandal_name: 'राजमुद्रा गणपती मंडळ',
-    mandal_sub: 'राजमुद्रा गणपती मंडळ',
+    mandal_name: MANDAL_CONFIG.name.mr,
+    mandal_sub: MANDAL_CONFIG.village.mr,
     mandal_established: '॥ श्री गणेशाय नमः ॥',
     mandal_slogan: '॥ गणपती बाप्पा मोरया ॥',
     mandal_tagline: 'डिजिटल पावती व हिशोब व्यवस्थापन',
@@ -36,7 +37,7 @@ const translations: Record<Language, Record<string, string>> = {
     logout_btn: 'लॉगआउट (Logout)',
     logout_confirm_title: 'खात्यातून बाहेर पडायचे आहे का?',
     logout_confirm_desc: 'तुम्ही या डिव्हाइसवरून सुरक्षितपणे लॉगआउट व्हाल.',
-    login_title: 'राजमुद्रा गणपती मंडळ लॉगिन',
+    login_title: `${MANDAL_CONFIG.name.mr} लॉगिन`,
     login_phone_label: 'नोंदणीकृत मोबाईल नंबर',
     login_pass_label: 'पासवर्ड',
     login_btn: 'लॉगिन करा',
@@ -128,9 +129,9 @@ const translations: Record<Language, Record<string, string>> = {
     slip_amount_words: 'अक्षरी रक्कम (In Words):',
     slip_amount_badge: 'रक्कम ₹:',
     slip_collector: 'पावती देणारा:',
-    slip_verified_badge: 'अधिकृत पावती (RGM-VERIFIED)',
+    slip_verified_badge: `अधिकृत पावती (${MANDAL_CONFIG.verifiedCode})`,
     slip_scan_note: 'स्कॅन करून पडताळणी करा',
-    slip_mandal_stamp: 'राजमुद्रा गणपती मंडळ (अधिकृत)',
+    slip_mandal_stamp: `${MANDAL_CONFIG.name.mr} (अधिकृत)`,
 
     // Receipts List
     list_title: 'सर्व पावत्या यादी व शोध (All Donation Receipts)',
@@ -180,9 +181,9 @@ const translations: Record<Language, Record<string, string>> = {
 
   en: {
     // Brand & Header
-    mandal_name: 'Rajmudra Ganpati Mandal',
-    mandal_sub: 'Uchgaon, Karveer, Kolhapur',
-    mandal_established: 'Est. 2012 • Uchgaon, Kolhapur',
+    mandal_name: MANDAL_CONFIG.name.en,
+    mandal_sub: MANDAL_CONFIG.village.en,
+    mandal_established: MANDAL_CONFIG.village.mr,
     mandal_slogan: '॥ Shree Ganeshay Namah ॥ ॥ Ganpati Bappa Morya ॥',
     mandal_tagline: 'Digital Pavti & Finance Management',
     blessing_footer: 'The Mandal expresses heartfelt gratitude for your generous support and contribution!',
@@ -203,7 +204,7 @@ const translations: Record<Language, Record<string, string>> = {
     logout_btn: 'Logout',
     logout_confirm_title: 'Do you want to log out?',
     logout_confirm_desc: 'You will be securely logged out from this device.',
-    login_title: 'Rajmudra Ganpati Mandal Login',
+    login_title: `${MANDAL_CONFIG.name.en} Login`,
     login_phone_label: 'Registered Mobile Number',
     login_pass_label: 'Password',
     login_btn: 'Login Now',
@@ -295,9 +296,9 @@ const translations: Record<Language, Record<string, string>> = {
     slip_amount_words: 'Amount in Words:',
     slip_amount_badge: 'Amount ₹:',
     slip_collector: 'Issued By:',
-    slip_verified_badge: 'Official Receipt (RGM-VERIFIED)',
+    slip_verified_badge: `Official Receipt (${MANDAL_CONFIG.verifiedCode})`,
     slip_scan_note: 'Scan QR to verify authenticity',
-    slip_mandal_stamp: 'Rajmudra Ganpati Mandal (Authorized)',
+    slip_mandal_stamp: `${MANDAL_CONFIG.name.en} (Authorized)`,
 
     // Receipts List
     list_title: 'All Donation Receipts & Search',

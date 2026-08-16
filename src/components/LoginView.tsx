@@ -118,7 +118,8 @@ export const LoginView: React.FC = () => {
               <div className="text-center flex-1 px-1">
                 <span className="text-[11px] font-extrabold text-amber-200 uppercase tracking-widest block">॥ श्री गणेशाय नमः ॥</span>
                 <span className="text-xs font-bold text-white block mt-0.5">सार्वजनिक गणेशोत्सव २०२६</span>
-                <h1 className="text-lg sm:text-2xl font-black text-yellow-300 font-serif tracking-tight mt-1 leading-tight drop-shadow-sm">राजमुद्रा गणपती मंडळ</h1>
+                <h1 className="text-lg sm:text-2xl font-black text-yellow-300 font-serif tracking-tight mt-1 leading-tight drop-shadow-sm">{t('mandal_name')}</h1>
+                <p className="text-[11px] sm:text-xs font-extrabold text-amber-100 mt-0.5">{t('mandal_sub')}</p>
                 <p className="text-[11px] sm:text-xs font-semibold text-amber-100 mt-0.5">पावती व आर्थिक व्यवस्थापन प्रणाली</p>
               </div>
 

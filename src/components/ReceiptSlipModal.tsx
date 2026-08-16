@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Pavti } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { MANDAL_CONFIG } from '../../shared/mandalConfig';
 import {
   Printer,
   Share2,
@@ -15,7 +17,9 @@ import {
   Calendar,
   IndianRupee,
   ShieldCheck,
-  Download
+  Download,
+  ImageDown,
+  LoaderCircle
 } from 'lucide-react';
 
 interface ReceiptSlipModalProps {
@@ -26,7 +30,10 @@ interface ReceiptSlipModalProps {
 
 export const ReceiptSlipModal: React.FC<ReceiptSlipModalProps> = ({ pavti, isOpen, onClose }) => {
   const { language, t, getWordsForAmount } = useLanguage();
+  const { authFetch } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState<'png' | 'pdf' | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const printableRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !pavti) return null;
@@ -60,14 +67,14 @@ Thank you for your auspicious Ganesh Festival donation / vargani.
 • *Address:* ${actualPavti?.donorAddress || '-'}
 • *Issued By:* ${actualPavti?.collectedBy?.name || 'Mandal Representative'}
 
-Rajmudra Ganpati Mandal conveys its deepest gratitude. May Lord Ganesha bestow peace, health, and prosperity upon your family!
+${MANDAL_CONFIG.name.en} conveys its deepest gratitude. May Lord Ganesha bestow peace, health, and prosperity upon your family!
 
 *॥ Ganpati Bappa Morya, Mangalmurti Morya ॥*`
       );
     }
 
     return (
-`🚩 *राजमुद्रा गणपती मंडळ* 🚩
+`🚩 *${MANDAL_CONFIG.name.mr}* 🚩
 *॥ ॐ गं गणपतये नमः ॥ ॥ गणपती बाप्पा मोरया ॥*
 
 प्रिय श्री/सौ. *${actualPavti?.donorName || 'देणगीदार'}*,
@@ -83,7 +90,7 @@ Rajmudra Ganpati Mandal conveys its deepest gratitude. May Lord Ganesha bestow p
 • *पत्ता:* ${actualPavti?.donorAddress || '-'}
 • *पावती देणारा:* ${actualPavti?.collectedBy?.name || 'मंडळ प्रतिनिधी'}
 
-राजमुद्रा गणपती मंडळ आपले सहर्ष आभार मानत आहे! बाप्पाच्या कृपेने आपल्या सर्व मनोकामना पूर्ण होवोत.
+${MANDAL_CONFIG.name.mr} आपले सहर्ष आभार मानत आहे! बाप्पाच्या कृपेने आपल्या सर्व मनोकामना पूर्ण होवोत.
 
 *॥ गणपती बाप्पा मोरया, मंगलमूर्ती मोरया ॥*`
     );
@@ -91,6 +98,70 @@ Rajmudra Ganpati Mandal conveys its deepest gratitude. May Lord Ganesha bestow p
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const captureReceipt = async () => {
+    if (!printableRef.current) throw new Error('Receipt content is not available.');
+    await document.fonts?.ready;
+    const { default: html2canvas } = await import('html2canvas-pro');
+    return html2canvas(printableRef.current, {
+      scale: Math.max(2, window.devicePixelRatio || 1),
+      useCORS: true,
+      backgroundColor: '#fffbf2',
+      logging: false,
+    });
+  };
+
+  const recordExport = (format: 'png' | 'pdf') => {
+    void authFetch('/api/pavti/receipt-exported', {
+      method: 'POST',
+      body: JSON.stringify({ receiptNo: actualPavti.receiptNo, format }),
+    }).catch((error) => console.warn('Could not record receipt export:', error));
+  };
+
+  const handleDownloadPng = async () => {
+    setExporting('png');
+    setExportError(null);
+    try {
+      const canvas = await captureReceipt();
+      const link = document.createElement('a');
+      const safeReceiptNo = (actualPavti.receiptNo || 'receipt').replace(/[^a-zA-Z0-9_-]/g, '_');
+      link.download = `${MANDAL_CONFIG.exportPrefix}_Receipt_${safeReceiptNo}.png`;
+      link.href = canvas.toDataURL('image/png', 1);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      recordExport('png');
+    } catch (error: any) {
+      setExportError(error.message || 'PNG download failed.');
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setExporting('pdf');
+    setExportError(null);
+    try {
+      const canvas = await captureReceipt();
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const maxWidth = pageWidth - 16;
+      const maxHeight = pageHeight - 16;
+      const ratio = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
+      const imageWidth = canvas.width * ratio;
+      const imageHeight = canvas.height * ratio;
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (pageWidth - imageWidth) / 2, 8, imageWidth, imageHeight, undefined, 'FAST');
+      const safeReceiptNo = (actualPavti.receiptNo || 'receipt').replace(/[^a-zA-Z0-9_-]/g, '_');
+      pdf.save(`${MANDAL_CONFIG.exportPrefix}_Receipt_${safeReceiptNo}.pdf`);
+      recordExport('pdf');
+    } catch (error: any) {
+      setExportError(error.message || 'PDF download failed.');
+    } finally {
+      setExporting(null);
+    }
   };
 
   const handleWhatsAppShare = () => {
@@ -154,6 +225,26 @@ Rajmudra Ganpati Mandal conveys its deepest gratitude. May Lord Ganesha bestow p
               <span>{t('action_share_wp')}</span>
             </button>
 
+            <button
+              onClick={handleDownloadPng}
+              disabled={Boolean(exporting)}
+              className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow transition cursor-pointer disabled:opacity-50"
+              title={language === 'en' ? 'Download receipt as PNG image' : 'पावती PNG इमेज डाउनलोड करा'}
+            >
+              {exporting === 'png' ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <ImageDown className="w-3.5 h-3.5" />}
+              <span>PNG</span>
+            </button>
+
+            <button
+              onClick={handleDownloadPdf}
+              disabled={Boolean(exporting)}
+              className="flex items-center gap-1 bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow transition cursor-pointer disabled:opacity-50"
+              title={language === 'en' ? 'Download receipt as PDF' : 'पावती PDF डाउनलोड करा'}
+            >
+              {exporting === 'pdf' ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              <span>PDF</span>
+            </button>
+
             {/* Print button */}
             <button
               onClick={handlePrint}
@@ -173,6 +264,12 @@ Rajmudra Ganpati Mandal conveys its deepest gratitude. May Lord Ganesha bestow p
             </button>
           </div>
         </div>
+
+        {exportError && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-xs font-semibold text-red-800 print:hidden">
+            {exportError}
+          </div>
+        )}
 
         {/* Completion Success Notification & WhatsApp Prompt Banner (Hidden when printing) */}
         <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-emerald-950 print:hidden">

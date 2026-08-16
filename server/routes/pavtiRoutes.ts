@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { PavtiModel, UserModel, ExpenseModel } from '../models.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../auth.js';
 import { recordAudit } from '../audit.js';
+import { MANDAL_CONFIG } from '../../shared/mandalConfig.js';
 
 const router = Router();
 
@@ -350,7 +351,7 @@ router.post('/create', authenticateToken, async (req: AuthRequest, res: Response
     // Generate Verification QR Code
     const appUrl = process.env.APP_URL || 'https://eakdant-mandal.org';
     const qrVerificationPayload = JSON.stringify({
-      mandal: 'राजमुद्रा गणपती मंडळ',
+      mandal: MANDAL_CONFIG.name.mr,
       receiptNo,
       donor: donorName,
       amount: parsedAmount,
@@ -358,7 +359,7 @@ router.post('/create', authenticateToken, async (req: AuthRequest, res: Response
       mode: paymentMode || 'cash',
       status: finalPaymentStatus.toUpperCase(),
       collector: req.user!.name,
-      verified: 'RGM-VERIFIED',
+      verified: MANDAL_CONFIG.verifiedCode,
     });
 
     let qrCodeDataUrl = '';
@@ -436,7 +437,8 @@ router.post('/update-payment-status', authenticateToken, async (req: AuthRequest
     }
 
     // STRICT CHECK: Only Admin has authority to change payment status
-    if (req.user!.role !== 'admin') {
+    const actor = await UserModel.findById(req.user!.id);
+    if (req.user!.role !== 'admin' && !actor?.canUpdateReceiptStatus) {
       return res.status(403).json({
         error: 'फक्त ॲडमिनला पावतीचे पेड/अनपेड स्टेटस बदलण्याचा अधिकार आहे (Only Admin has authority to change Pavti payment status between Paid and Unpaid).'
       });
@@ -541,6 +543,33 @@ router.get('/receipt/:receiptNo', async (req, res) => {
     return res.json(pavti);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// Record successful client-side receipt file exports.
+router.post('/receipt-exported', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const receiptNo = String(req.body.receiptNo || '').trim();
+    const format = String(req.body.format || '').toLowerCase();
+    if (!receiptNo || !['png', 'pdf'].includes(format)) {
+      return res.status(400).json({ error: 'A valid receipt number and export format are required.' });
+    }
+
+    const pavti = await PavtiModel.findOne({ receiptNo });
+    if (!pavti) return res.status(404).json({ error: 'Receipt not found.' });
+
+    await recordAudit({
+      action: format === 'png' ? 'PAVTI_PNG_EXPORTED' : 'PAVTI_PDF_EXPORTED',
+      entityType: 'pavti',
+      entityId: pavti._id?.toString() || pavti.id || receiptNo,
+      description: `${req.user!.name} downloaded receipt ${receiptNo} as ${format.toUpperCase()}.`,
+      req,
+      metadata: { receiptNo, format, donorName: pavti.donorName, amount: pavti.amount },
+    });
+
+    return res.json({ recorded: true });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to record receipt export.' });
   }
 });
 

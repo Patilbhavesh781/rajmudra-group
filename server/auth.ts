@@ -3,8 +3,14 @@ import bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
 import { UserModel } from './models.js';
 import crypto from 'crypto';
+import { MANDAL_CONFIG } from '../shared/mandalConfig.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'rajmudra_ganpati_mandal_secure_jwt_secret_2026';
+function getJwtSecret() {
+  const configuredSecret = process.env.JWT_SECRET?.trim();
+  if (configuredSecret) return configuredSecret;
+  if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET must be configured in production.');
+  return 'rajmudra_local_development_only_secret_2026';
+}
 
 export interface AuthRequest extends Request {
   user?: {
@@ -13,11 +19,13 @@ export interface AuthRequest extends Request {
     role: 'admin' | 'user';
     name: string;
     sessionId: string;
+    canUpdateReceiptStatus: boolean;
+    canManageExpenses: boolean;
   };
 }
 
 export function generateToken(payload: { id: string; phone: string; role: 'admin' | 'user'; name: string; sessionId: string }) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }
 
 export async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
@@ -29,7 +37,7 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
     const user = await UserModel.findById(decoded.id);
 
     if (!user) {
@@ -57,6 +65,8 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
       role: user.role,
       name: user.name,
       sessionId: decoded.sessionId,
+      canUpdateReceiptStatus: Boolean(user.canUpdateReceiptStatus),
+      canManageExpenses: Boolean(user.canManageExpenses),
     };
     next();
   } catch (err: any) {
@@ -76,19 +86,22 @@ export async function seedInitialMandalData() {
     const count = await UserModel.countDocuments();
     if (count === 0) {
       const initialAdminPassword = process.env.INITIAL_ADMIN_PASSWORD?.trim();
+      const initialAdminPhone = process.env.INITIAL_ADMIN_PHONE?.trim() || MANDAL_CONFIG.primaryAdmin.phone;
       if (!initialAdminPassword) {
         throw new Error('INITIAL_ADMIN_PASSWORD must be set in .env before the first startup.');
       }
 
-      console.log('[Seed] Creating the initial Rajmudra Ganpati Mandal admin account...');
+      console.log(`[Seed] Creating the initial ${MANDAL_CONFIG.name.en} admin account...`);
       const adminPasswordHash = await bcrypt.hash(initialAdminPassword, 10);
 
       await UserModel.create({
-        name: 'Sangharsh Patil',
-        phone: '7057606126',
+        name: MANDAL_CONFIG.primaryAdmin.name,
+        phone: initialAdminPhone,
         role: 'admin',
         passwordHash: adminPasswordHash,
         activeSessionId: null,
+        canUpdateReceiptStatus: true,
+        canManageExpenses: true,
       });
       console.log('[Seed] Initial admin account created. Database is ready for fresh Mandal data.');
     }

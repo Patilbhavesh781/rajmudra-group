@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Pavti } from '../types';
+import { MANDAL_CONFIG } from '../../shared/mandalConfig';
 import {
   Search,
   Receipt,
@@ -22,9 +23,10 @@ import {
 interface PavtiListViewProps {
   onViewReceipt: (pavti: Pavti) => void;
   onOpenNewPavti: () => void;
+  unpaidOnly?: boolean;
 }
 
-export const PavtiListView: React.FC<PavtiListViewProps> = ({ onViewReceipt, onOpenNewPavti }) => {
+export const PavtiListView: React.FC<PavtiListViewProps> = ({ onViewReceipt, onOpenNewPavti, unpaidOnly = false }) => {
   const { authFetch, user } = useAuth();
   const { language, t, getWordsForAmount } = useLanguage();
 
@@ -32,7 +34,7 @@ export const PavtiListView: React.FC<PavtiListViewProps> = ({ onViewReceipt, onO
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [modeFilter, setModeFilter] = useState('all');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState(unpaidOnly ? 'unpaid' : 'all');
   const [onlyMine, setOnlyMine] = useState(false);
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
@@ -68,7 +70,7 @@ export const PavtiListView: React.FC<PavtiListViewProps> = ({ onViewReceipt, onO
 
   // Status toggle handler - ADMIN ONLY
   const handleTogglePaymentStatus = async (receiptNo: string, currentStatus: 'paid' | 'unpaid') => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && !user?.canUpdateReceiptStatus) {
       alert(t('list_admin_only_change_alert'));
       return;
     }
@@ -158,7 +160,7 @@ May Lord Ganesha bless you and your family!
 *॥ Ganpati Bappa Morya, Mangalmurti Morya ॥*`;
     } else {
       msg = 
-`🚩 *राजमुद्रा गणपती मंडळ* 🚩
+`🚩 *${MANDAL_CONFIG.name.mr}* 🚩
 *॥ ॐ गं गणपतये नमः ॥*
 
 प्रिय श्री/सौ. *${p.donorName}*,
@@ -172,7 +174,7 @@ May Lord Ganesha bless you and your family!
 • *पेमेंट प्रकार:* ${p.paymentMode === 'upi' ? 'युपीआय (UPI)' : p.paymentMode === 'cash' ? 'रोख (Cash)' : p.paymentMode.toUpperCase()}
 • *पावती देणारा:* ${p.collectedBy?.name || 'मंडळ प्रतिनिधी'}
 
-राजमुद्रा गणपती मंडळ आपले मनःपूर्वक आभार मानत आहे!
+${MANDAL_CONFIG.name.mr} आपले मनःपूर्वक आभार मानत आहे!
 *॥ गणपती बाप्पा मोरया, मंगलमूर्ती मोरया ॥*`;
     }
 
@@ -218,10 +220,12 @@ May Lord Ganesha bless you and your family!
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2 font-serif">
               <Receipt className="w-5 h-5 text-amber-700" />
-              {t('list_title')}
+              {unpaidOnly ? (language === 'en' ? 'Pending / Unpaid Receipts' : 'बाकी / प्रलंबित पावत्या') : t('list_title')}
             </h2>
             <p className="text-xs text-slate-500">
-              {t('list_subtitle')}
+              {unpaidOnly
+                ? (language === 'en' ? 'Follow up pending donations and mark them paid after collection.' : 'येणे बाकी असलेल्या देणग्यांचा पाठपुरावा करा आणि रक्कम मिळाल्यानंतर जमा म्हणून नोंदवा.')
+                : t('list_subtitle')}
             </p>
           </div>
 
@@ -256,7 +260,7 @@ May Lord Ganesha bless you and your family!
           </div>
 
           {/* Payment Mode Filter */}
-          <div className="lg:col-span-2">
+          {!unpaidOnly && <div className="lg:col-span-2">
             <select
               value={modeFilter}
               onChange={(e) => setModeFilter(e.target.value)}
@@ -268,7 +272,7 @@ May Lord Ganesha bless you and your family!
               <option value="online">{t('mode_online')}</option>
               <option value="cheque">{t('mode_cheque')}</option>
             </select>
-          </div>
+          </div>}
 
           {/* Payment Status Filter */}
           <div className="lg:col-span-2">
@@ -395,7 +399,7 @@ May Lord Ganesha bless you and your family!
                     )}
 
                     {/* Admin Status Toggle Button */}
-                    {user?.role === 'admin' && !isCancelled && (
+                    {(user?.role === 'admin' || user?.canUpdateReceiptStatus) && !isCancelled && (
                       <button
                         type="button"
                         onClick={() => handleTogglePaymentStatus(p.receiptNo, isPaid ? 'paid' : 'unpaid')}

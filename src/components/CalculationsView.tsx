@@ -116,8 +116,9 @@ export const CalculationsView: React.FC<CalculationsViewProps> = ({ onOpenNewPav
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white font-serif mt-1 tracking-tight">
-              {language === 'en' ? 'Mandal Financial Dashboard' : 'राजमुद्रा गणपती मंडळ आर्थिक डॅशबोर्ड'}
+              {language === 'en' ? 'Mandal Financial Dashboard' : `${t('mandal_name')} आर्थिक डॅशबोर्ड`}
             </h2>
+            <p className="mt-0.5 text-xs font-bold text-amber-100">{t('mandal_sub')}</p>
             <p className="text-xs sm:text-sm text-amber-200/90 max-w-2xl mt-0.5">
               {language === 'en'
                 ? 'Overview of total collected donations, used expenses, pending balances, and collector breakdown.'

@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { memoryStore, saveLocalBackup, dbStatus } from './db.js';
 import crypto from 'crypto';
+import { MANDAL_CONFIG } from '../shared/mandalConfig.js';
 
 // -------------------------------------------------------------
 // USER MODEL / INTERFACE
@@ -15,6 +16,8 @@ export interface IUser extends Document {
   lastLoginDevice: string | null;
   lastLoginIp: string | null;
   isActive: boolean;
+  canUpdateReceiptStatus: boolean;
+  canManageExpenses: boolean;
   createdAt: string;
 }
 
@@ -28,6 +31,8 @@ const UserSchema = new Schema({
   lastLoginDevice: { type: String, default: null },
   lastLoginIp: { type: String, default: null },
   isActive: { type: Boolean, default: true },
+  canUpdateReceiptStatus: { type: Boolean, default: false },
+  canManageExpenses: { type: Boolean, default: false },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 
@@ -140,12 +145,20 @@ export type AuditAction =
   | 'LOGIN'
   | 'LOGOUT'
   | 'USER_CREATED'
+  | 'USER_UPDATED'
+  | 'USER_DELETED'
   | 'USER_FORCE_LOGOUT'
   | 'PAVTI_CREATED'
   | 'PAVTI_PAYMENT_STATUS_CHANGED'
   | 'PAVTI_CANCELLED'
   | 'EXPENSE_CREATED'
-  | 'EXPENSE_DELETED';
+  | 'EXPENSE_DELETED'
+  | 'RECEIPTS_REPORT_EXPORTED'
+  | 'EXPENSES_REPORT_EXPORTED'
+  | 'PAVTI_PNG_EXPORTED'
+  | 'PAVTI_PDF_EXPORTED'
+  | 'EXPENSE_VOUCHER_PRINTED'
+  | 'MANDAL_DATA_RESET';
 
 export interface IAuditLog extends Document {
   action: AuditAction;
@@ -182,6 +195,31 @@ const AuditLogSchema = new Schema({
 });
 
 export const MongoAuditLogModel = mongoose.models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+
+export async function resetMandalData(primaryAdminId: string) {
+  if (dbStatus.type === 'mongodb' && mongoose.connection.readyState === 1) {
+    const [pavtis, expenses, users] = await Promise.all([
+      (MongoPavtiModel as any).deleteMany({}),
+      (MongoExpenseModel as any).deleteMany({}),
+      (MongoUserModel as any).deleteMany({ _id: { $ne: primaryAdminId } }),
+      (MongoAuditLogModel as any).deleteMany({}),
+    ]);
+    return { pavtis: pavtis.deletedCount || 0, expenses: expenses.deletedCount || 0, users: users.deletedCount || 0 };
+  }
+
+  const result = {
+    pavtis: memoryStore.pavtis.length,
+    expenses: memoryStore.expenses.length,
+    users: memoryStore.users.filter((user) => user._id !== primaryAdminId && user.id !== primaryAdminId).length,
+  };
+  memoryStore.pavtis.splice(0);
+  memoryStore.expenses.splice(0);
+  memoryStore.auditLogs.splice(0);
+  memoryStore.users = memoryStore.users.filter((user) => user._id === primaryAdminId || user.id === primaryAdminId);
+  memoryStore.counters.pavtiSeq = 100;
+  saveLocalBackup();
+  return result;
+}
 
 // -------------------------------------------------------------
 // UNIFIED DATA ACCESS LAYER (Transparently routes to Mongo or MemoryStore)
@@ -264,6 +302,17 @@ export const UserModel = {
       return await (MongoUserModel as any).countDocuments(filter);
     }
     return memoryStore.users.length;
+  },
+
+  async deleteOne(filter: any) {
+    if (dbStatus.type === 'mongodb' && mongoose.connection.readyState === 1) {
+      return await (MongoUserModel as any).deleteOne(filter);
+    }
+    const index = memoryStore.users.findIndex((user) => user._id === filter._id || user.id === filter._id);
+    if (index < 0) return { deletedCount: 0 };
+    memoryStore.users.splice(index, 1);
+    saveLocalBackup();
+    return { deletedCount: 1 };
   }
 };
 
@@ -356,7 +405,7 @@ export const PavtiModel = {
       saveLocalBackup();
     }
     const padded = String(count).padStart(4, '0');
-    return `RGM-${year}-${padded}`;
+    return `${MANDAL_CONFIG.receiptPrefix}-${year}-${padded}`;
   }
 };
 
