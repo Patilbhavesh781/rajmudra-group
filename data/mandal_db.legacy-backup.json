@@ -1,0 +1,135 @@
+{
+  "users": [
+    {
+      "_id": "usr_104b4650",
+      "createdAt": "2026-08-14T07:39:54.707Z",
+      "activeSessionId": null,
+      "lastLoginAt": null,
+      "lastLoginDevice": null,
+      "lastLoginIp": null,
+      "isActive": true,
+      "name": "अध्यक्ष / ॲडमिन (एकदंत मंडळ)",
+      "phone": "9876543210",
+      "role": "admin",
+      "passwordHash": "$2b$10$XXL70wtj4B63t1dy8wp0o.FmWfRRF0sEkE2XmsXM1Unp1grlB0aT2"
+    },
+    {
+      "_id": "usr_5701c7ac",
+      "createdAt": "2026-08-14T07:39:54.708Z",
+      "activeSessionId": "sess_a2ac2126-c125-46d7-abf9-27c3deaead0f",
+      "lastLoginAt": "2026-08-16T11:34:33.161Z",
+      "lastLoginDevice": "Windows PC (०५:०४ PM)",
+      "lastLoginIp": "127.0.0.1",
+      "isActive": true,
+      "name": "आकाश खोत (कार्यकर्ता)",
+      "phone": "9123456780",
+      "role": "user",
+      "passwordHash": "$2b$10$vmRHvthPAhJfVOiBsK0XlO0MjeQLytP0CeKJO/WU7mLHLXlGr7MPe"
+    },
+    {
+      "_id": "usr_a54c436f",
+      "createdAt": "2026-08-14T07:39:54.708Z",
+      "activeSessionId": null,
+      "lastLoginAt": null,
+      "lastLoginDevice": null,
+      "lastLoginIp": null,
+      "isActive": true,
+      "name": "रोहित पाटील (खजिनदार)",
+      "phone": "9822001122",
+      "role": "user",
+      "passwordHash": "$2b$10$vmRHvthPAhJfVOiBsK0XlO0MjeQLytP0CeKJO/WU7mLHLXlGr7MPe"
+    }
+  ],
+  "pavtis": [
+    {
+      "_id": "pvt_af5cae20",
+      "createdAt": "2026-08-14T07:39:54.709Z",
+      "updatedAt": "2026-08-14T07:39:54.709Z",
+      "status": "active",
+      "verified": true,
+      "receiptNo": "EKD-2026-0003",
+      "donorName": "श्री. आनंद संभाजी पाटील",
+      "donorPhone": "9421008899",
+      "donorAddress": "जय भवानी गल्ली, उचगाव",
+      "amount": 1101,
+      "amountInWords": "एक हजार एकशे एक रुपये फक्त",
+      "paymentMode": "cash",
+      "donationCategory": "उत्सव वर्गणी (Utsav Vargani)",
+      "note": "वर्गणी",
+      "collectedBy": {
+        "userId": "usr_a54c436f",
+        "name": "रोहित पाटील (खजिनदार)",
+        "role": "user",
+        "phone": "9822001122"
+      },
+      "date": "2026-08-13"
+    },
+    {
+      "_id": "pvt_f340b658",
+      "createdAt": "2026-08-14T07:39:54.709Z",
+      "updatedAt": "2026-08-14T07:39:54.709Z",
+      "status": "active",
+      "verified": true,
+      "receiptNo": "EKD-2026-0002",
+      "donorName": "सौ. सुनिता प्रकाश देशपांडे",
+      "donorPhone": "9890112233",
+      "donorAddress": "शिवाजी रोड, उचगाव, कोल्हापूर",
+      "amount": 5001,
+      "amountInWords": "पाच हजार एक रुपये फक्त",
+      "paymentMode": "upi",
+      "transactionId": "UPI-982348712903",
+      "donationCategory": "विशेष देणगी (Special Donation)",
+      "note": "महाप्रसाद व पूजा सेवा",
+      "collectedBy": {
+        "userId": "usr_5701c7ac",
+        "name": "आकाश खोत (कार्यकर्ता)",
+        "role": "user",
+        "phone": "9123456780"
+      },
+      "date": "2026-08-14"
+    },
+    {
+      "_id": "pvt_da7d0a68",
+      "createdAt": "2026-08-14T07:39:54.709Z",
+      "updatedAt": "2026-08-14T07:39:54.709Z",
+      "status": "active",
+      "verified": true,
+      "receiptNo": "EKD-2026-0001",
+      "donorName": "श्री. विजय शामराव मोरे",
+      "donorPhone": "9822334455",
+      "donorAddress": "गणपती चौक, उचगाव",
+      "amount": 2501,
+      "amountInWords": "दोन हजार पाचशे एक रुपये फक्त",
+      "paymentMode": "cash",
+      "donationCategory": "उत्सव वर्गणी (Utsav Vargani)",
+      "note": "वार्षिक वर्गणी पावती",
+      "collectedBy": {
+        "userId": "usr_104b4650",
+        "name": "अध्यक्ष / ॲडमिन (एकदंत मंडळ)",
+        "role": "admin",
+        "phone": "9876543210"
+      },
+      "date": "2026-08-14"
+    }
+  ],
+  "expenses": [
+    {
+      "_id": "exp_023bc4f1",
+      "expenseNo": "EXP-2026-001",
+      "createdAt": "2026-08-14T07:39:54.710Z",
+      "title": "मंडप व ध्वनी व्यवस्था ॲडव्हान्स",
+      "category": "मंडप व ध्वनी (Sound & Light)",
+      "amount": 3500,
+      "paymentMode": "cash",
+      "paidTo": "शर्मा मंडप डेकोरेटर्स, कोल्हापूर",
+      "recordedBy": {
+        "userId": "usr_104b4650",
+        "name": "अध्यक्ष / ॲडमिन (एकदंत मंडळ)"
+      },
+      "date": "2026-08-14"
+    }
+  ],
+  "counters": {
+    "pavtiSeq": 100
+  }
+}

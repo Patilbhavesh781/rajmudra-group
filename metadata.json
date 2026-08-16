@@ -1,0 +1,6 @@
+{
+  "name": "Rajmudra Ganpati Mandal Pavti & Finance Manager",
+  "description": "Full-stack digital donation receipt (Pavti), single-device session security, live calculation analytics, and MongoDB backend for Mandal volunteers and admins.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

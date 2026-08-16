@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+body {
+  font-family: "Noto Sans Devanagari", system-ui, sans-serif;
+}
+
+.font-serif {
+  font-family: "Rozha One", "Noto Sans Devanagari", serif;
+}
+
+.login-festive-pattern {
+  background-image:
+    radial-gradient(circle at 20% 20%, #f59e0b 0 2px, transparent 2px),
+    radial-gradient(circle at 80% 80%, #f59e0b 0 2px, transparent 2px);
+  background-size: 42px 42px;
+}
+
+@keyframes login-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes login-scale-up {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: login-fade-in 160ms ease-out;
+}
+
+.animate-scale-up {
+  animation: login-scale-up 180ms ease-out;
+}
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  header, footer, nav, button, .print\:hidden {
+    display: none !important;
+  }
+  #printable-receipt-slip {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Hide scrollbar for clean tab scrolling on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
